@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>library</title>
+    <!-- Tailwind & Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .message-bot { background-color: #f3f4f6; color: #1f2937; border-radius: 1.2rem 1.2rem 1.2rem 0.2rem; }
+        .message-user { background-color: #2563eb; color: white; border-radius: 1.2rem 1.2rem 0.2rem 1.2rem; }
+        .nav-item.active { background-color: #dbeafe; color: #1e40af; font-weight: 500; }
+        .main-panel { height: calc(100vh - 0px); }
+        .dialog-messages { scroll-behavior: smooth; }
+        .resource-item:not(:last-child) { border-bottom: 1px solid #e5e7eb; }
+        .version-badge { background-color: #eef2f6; color: #1f2937; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 2rem; font-weight: 500; border: 1px solid #d1d9e0; }
+        .download-icon { color: #4b5563; transition: color 0.1s; }
+        .download-icon:hover { color: #2563eb; }
+        /* 手机窄侧栏微调 */
+        @media (max-width: 768px) {
+            .nav-item { justify-content: center; }
+        }
+    </style>
+</head>
+<body class="antialiased font-sans bg-white h-screen flex overflow-hidden">
+
+    <!-- 侧边导航栏：手机宽度20 (5rem) / 桌面64 (16rem) 平滑过渡 -->
+    <aside class="w-20 md:w-64 bg-[#f6f8fa] border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-300">
+        <!-- 标题区域：手机只显示图标，桌面显示完整 -->
+        <div class="p-3 md:p-5 border-b border-gray-200 flex justify-center md:justify-start items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-down text-blue-500 text-xl md:text-2xl"></i>
+            <h1 class="hidden md:block text-xl font-bold text-gray-800">Resource Station</h1>
+        </div>
+        <!-- 微桌面提示（手机隐藏） -->
+        <p class="hidden md:block text-xs text-gray-500 mt-1 px-5">Conversation. Download. Version</p>
+
+        <!-- 导航菜单：手机图标居中，带title提示 -->
+        <nav class="flex-1 px-2 md:px-3 py-4 space-y-1">
+            <div id="nav-dialog" class="nav-item flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-lg cursor-pointer transition hover:bg-gray-200 text-gray-700 active" title="dialogue">
+                <i class="fa-regular fa-message text-lg w-6 text-center md:text-left"></i>
+                <span class="hidden md:inline text-base font-medium">对话</span>
+            </div>
+            <div id="nav-library" class="nav-item flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-lg cursor-pointer transition hover:bg-gray-200 text-gray-700" title="库">
+                <i class="fa-regular fa-folder-open text-lg w-6 text-center md:text-left"></i>
+                <span class="hidden md:inline text-base font-medium">library </span>
+                <!-- 徽章只在桌面显示 -->
+                <span class="hidden md:inline ml-auto text-xs bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full"> Resource Center</span>
+            </div>
+        </nav>
+
+        <!-- 底部小提示：手机完全隐藏，桌面保留 -->
+        <div class="hidden md:block p-4 border-t border-gray-200 text-xs text-gray-400">
+            <i class="fa-regular fa-circle-check mr-1"></i> Can be downloaded offline.
+        </div>
+    </aside>
+
+    <!-- 主内容区域 (保持不变，但会自适应剩余宽度) -->
+    <main class="flex-1 flex flex-col bg-white overflow-hidden main-panel">
+        <!-- 对话视图 (默认显示) -->
+        <div id="dialog-view" class="flex-1 flex flex-col overflow-hidden">
+            <!-- 对话消息区 (已适配移动端气泡宽度) -->
+            <div class="flex-1 overflow-y-auto p-3 md:p-5 space-y-5 dialog-messages" id="dialogMessages">
+                <!-- 助手欢迎语 -->
+                <div class="flex items-start gap-2 md:gap-3">
+                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-compass text-blue-600 text-xs md:text-sm"></i>
+                    </div>
+                    <div class="message-bot max-w-[85%] md:max-w-[75%] px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm">
+                        <span class="font-medium">dialogue</span>
+                        <p class="mt-1">Enter keywords to find</p>
+                    </div>
+                </div>
+                <!-- 示例用户消息 -->
+                <div class="flex items-start gap-2 md:gap-3 justify-end">
+                    <div class="message-user max-w-[85%] md:max-w-[75%] px-3 py-2 md:px-4 md:py-2.5 text-xs md:text-sm">
+                        <p>How can I download it?</p>
+                    </div>
+                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-user text-gray-600 text-xs md:text-sm"></i>
+                    </div>
+                </div>
+                <!-- 示例助手回复 (带卡片) - 静态卡片，添加了 data-resource-id -->
+                <div class="flex items-start gap-2 md:gap-3">
+                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-compass text-blue-600 text-xs md:text-sm"></i>
+                    </div>
+                    <div class="message-bot max-w-[85%] md:max-w-[75%] px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm">
+                        <span class="font-medium">dialogue</span>
+                        <p class="mt-1 mb-2">You can try the I below.</p>
+                        <!--  卡片 (id=2) -->
+                        <div class="bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200 p-2 mb-2 flex items-center justify-between" data-resource-id="2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-image text-blue-500"></i>
+                                <span class="font-mono text-xs md:text-sm"> </span>
+                            </div>
+                            <div class="flex items-center gap-2 md:gap-3">
+                                <span class="version-badge">v1.0</span>
+                                <i class="fa-regular fa-circle-down download-icon cursor-pointer"></i>
+                            </div>
+                        </div>
+                        <!--  卡片 (id=7) -->
+                        <div class="bg-white/80 rounded-lg border border-gray-200 p-2 flex items-center justify-between" data-resource-id="7">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-file-code text-purple-500"></i>
+                                <span class="font-mono text-xs md:text-sm"> </span>
+                            </div>
+                            <div class="flex items-center gap-2 md:gap-3">
+                                <span class="version-badge">v1.0</span>
+                                <i class="fa-regular fa-circle-down download-icon cursor-pointer"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部对话框输入区 (手机适当缩小) -->
+            <div class="border-t border-gray-200 p-3 md:p-4 bg-white">
+                <div class="flex items-center gap-2">
+                    <input type="text" id="searchInput" placeholder="Enter the keywords for the content you want." class="flex-1 border border-gray-300 rounded-full px-4 py-2 md:px-5 md:py-3 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-gray-50">
+                    <button id="sendSearchBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-2 md:px-6 md:py-3 text-xs md:text-sm font-medium transition flex items-center gap-1 md:gap-2">
+                        <i class="fa-regular fa-paper-plane"></i>
+                        <span class="hidden xs:inline md:inline">查找</span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 ml-2 hidden md:block">Enter keywords</p>
+                <!-- 手机简短提示 -->
+                <p class="text-[0.7rem] text-gray-400 mt-1 ml-2 md:hidden">keyword search resources</p>
+            </div>
+        </div>
+
+        <!-- 库视图 (动态渲染) 内容本身已有良好响应式，稍作内边距微调 -->
+        <div id="library-view" class="flex-1 overflow-y-auto p-4 md:p-6 hidden bg-white">
+            <div class="flex items-center justify-between mb-4 md:mb-5">
+                <h2 class="text-xl md:text-2xl font-semibold flex items-center gap-2">
+                    <i class="fa-regular fa-cube text-gray-600"></i>
+                    Library
+                </h2>
+                <div class="text-xs md:text-sm bg-gray-100 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-gray-600">
+                    <i class="fa-regular fa-code-branch mr-1"></i> version
+                </div>
+            </div>
+            <p class="text-xs md:text-sm text-gray-500 mb-4 border-l-4 border-blue-300 pl-3">
+                <i class="fa-regular fa-circle-info mr-1"></i> Find the content you want.Then you can click to download.
+            </p>
+
+            <!-- 资源列表容器 (由js动态生成) -->
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-200" id="library-resource-list"></div>
+            <div class="mt-6 text-xs text-gray-400 text-center border-t pt-5">
+                <i class="fa-regular fa-check-circle mr-1"></i> click<i class="fa-regular fa-circle-down mx-1"></i> download
+            </div>
+        </div>
+    </main>
+
+    <!-- 下载模态框-->
+    <div id="downloadModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden transition-opacity">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa-regular fa-pen-to-square text-blue-500"></i>
+                How do we download it?
+            </h3>
+            <p class="text-sm text-gray-600 mb-3"> When you click Download, a window will pop up.It will prompt you how to download the file you want.</p>
+            <textarea id="placeholderText" rows="4" class="w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50" placeholder="输入下载备注..."></textarea>
+            <div class="flex justify-end mt-4">
+                <button id="closeModalBtn" class="px-5 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fa-regular fa-circle-xmark"></i> 关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- 资源数据定义：每个资源增加独立的 placeholder 字段，不含链接 ----------
+            const resources = [
+                { id: 1, name: 'Builders and Viewers', fullName: 'Try gio and lme', description: 'This tool allows you to create GIO or LNE files.', version: 'v1.63', language: 'apk ', stars: '187k', forks: '74k', langColor: 'bg-green-500', icon: 'fa-book', iconColor: 'text-blue-500',
+                  placeholder: 'I heard you are about to download Builders and Viewers .Okay.Please try to https://notes.coloros.com/s/VwmZrrOp3wcw_1' },
+                { id: 2, name: 'Nope.', fullName: ' ', description: ' ', version: 'v1.0', language: ' ', stars: '0', forks: '0', langColor: 'bg-red-400', icon: 'fa-file-zipper', iconColor: 'text-amber-600',
+                  placeholder: ' ' },
+                { id: 3, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: ' ', stars: '0', forks: '0', langColor: 'bg-gray-500', icon: 'fa-code', iconColor: 'text-purple-500',
+                  placeholder: ' ' },
+                { id: 4, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: ' ', stars: '0', forks: '0', langColor: 'bg-blue-400', icon: 'fa-cube', iconColor: 'text-sky-600',
+                  placeholder: ' ' },
+                { id: 5, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: ' ', stars: '0', forks: '0', langColor: 'bg-amber-400', icon: 'fa-database', iconColor: 'text-emerald-600',
+                  placeholder: ' ' },
+                { id: 6, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: 'JavaScript', stars: '0', forks: '0', langColor: 'bg-yellow-400', icon: 'fa-paper-plane', iconColor: 'text-green-600',
+                  placeholder: ' ' },
+                { id: 7, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: ' ', stars: '0', forks: '0', langColor: 'bg-purple-400', icon: 'fa-file-code', iconColor: 'text-purple-500',
+                  placeholder: ' ' },
+                { id: 8, name: ' ', fullName: ' ', description: ' ', version: 'v1.0', language: 'JavaScript', stars: '0', forks: '0', langColor: 'bg-yellow-400', icon: 'fa-globe', iconColor: 'text-indigo-500',
+                  placeholder: ' ' }
+            ];
+
+            // ---------- 渲染库视图：每个 resource-item 添加 data-resource-id ----------
+            function renderLibrary() {
+                const container = document.getElementById('library-resource-list');
+                if (!container) return;
+                container.innerHTML = '';
+                resources.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'resource-item p-3 md:p-4 flex items-center justify-between hover:bg-gray-50/80';
+                    item.setAttribute('data-resource-id', r.id);  // 关键：存储资源id
+                    item.innerHTML = `
+                        <div class="flex items-start gap-2 md:gap-3">
+                            <i class="fa-regular ${r.icon} ${r.iconColor} mt-1 text-base md:text-lg"></i>
+                            <div>
+                                <a href="#" class="text-base md:text-lg font-semibold text-gray-800 hover:underline">${r.fullName}</a>
+                                <p class="text-xs md:text-sm text-gray-600 mt-0.5 line-clamp-1 md:line-clamp-none">${r.description}</p>
+                                <div class="flex items-center gap-2 md:gap-3 mt-2 text-xs text-gray-500">
+                                    <span><i class="fa-regular fa-star"></i> ${r.stars}</span>
+                                    <span><i class="fa-regular fa-code-branch"></i> ${r.forks}</span>
+                                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full ${r.langColor}"></span> <span class="hidden md:inline">${r.language}</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 md:gap-4">
+                            <span class="version-badge">${r.version}</span>
+                            <i class="fa-regular fa-circle-down download-icon text-lg md:text-xl cursor-pointer"></i>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            // ---------- 对话查找功能：动态生成的卡片也添加 data-resource-id ----------
+            const searchInput = document.getElementById('searchInput');
+            const sendBtn = document.getElementById('sendSearchBtn');
+            const dialogMessages = document.getElementById('dialogMessages');
+
+            function addUserMessage(text) {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'flex items-start gap-2 md:gap-3 justify-end';
+                userDiv.innerHTML = `
+                    <div class="message-user max-w-[85%] md:max-w-[75%] px-3 py-2 md:px-4 md:py-2.5 text-xs md:text-sm">
+                        <p>${escapeHtml(text)}</p>
+                    </div>
+                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-user text-gray-600 text-xs md:text-sm"></i>
+                    </div>
+                `;
+                dialogMessages.appendChild(userDiv);
+                scrollToBottom();
+            }
+
+            function addBotMessageWithResults(results, query) {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'flex items-start gap-2 md:gap-3';
+                let cardsHtml = '';
+                if (results.length === 0) {
+                    cardsHtml = `<p class="text-xs md:text-sm text-gray-600">😕 没有找到与 “${escapeHtml(query)}” 相关的资源。</p>`;
+                } else {
+                    cardsHtml = `<p class="text-xs md:text-sm mb-2">🔍 找到 ${results.length} 个相关资源：</p>`;
+                    results.forEach(r => {
+                        cardsHtml += `
+                            <div class="bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200 p-2 mb-2 flex items-center justify-between" data-resource-id="${r.id}">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-regular ${r.icon} ${r.iconColor} text-sm"></i>
+                                    <span class="font-mono text-xs md:text-sm font-medium">${r.name}</span>
+                                </div>
+                                <div class="flex items-center gap-2 md:gap-3">
+                                    <span class="version-badge">${r.version}</span>
+                                    <i class="fa-regular fa-circle-down download-icon cursor-pointer"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                botDiv.innerHTML = `
+                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-compass text-blue-600 text-xs md:text-sm"></i>
+                    </div>
+                    <div class="message-bot max-w-[85%] md:max-w-[75%] px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm">
+                        <span class="font-medium">dialogue</span>
+                        <div class="mt-1">${cardsHtml}</div>
+                    </div>
+                `;
+                dialogMessages.appendChild(botDiv);
+                scrollToBottom();
+            }
+
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"]/g, function(m) {
+                    if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; if(m === '"') return '&quot;';
+                    return m;
+                });
+            }
+
+            function scrollToBottom() {
+                dialogMessages.scrollTop = dialogMessages.scrollHeight;
+            }
+
+            function performSearch() {
+                const keyword = searchInput.value.trim();
+                if (keyword === '') return;
+                addUserMessage(keyword);
+                const lowerKeyword = keyword.toLowerCase();
+                const matched = resources.filter(r => 
+                    r.name.toLowerCase().includes(lowerKeyword) ||
+                    r.fullName.toLowerCase().includes(lowerKeyword) ||
+                    r.description.toLowerCase().includes(lowerKeyword) ||
+                    r.language.toLowerCase().includes(lowerKeyword)
+                );
+                addBotMessageWithResults(matched, keyword);
+                searchInput.value = '';
+            }
+
+            sendBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                performSearch();
+            });
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+
+            // ---------- 导航切换 ----------
+            const navDialog = document.getElementById('nav-dialog');
+            const navLibrary = document.getElementById('nav-library');
+            const dialogView = document.getElementById('dialog-view');
+            const libraryView = document.getElementById('library-view');
+
+            function setActive(activeItem) {
+                [navDialog, navLibrary].forEach(item => {
+                    item.classList.remove('active', 'bg-blue-100', 'text-blue-800');
+                });
+                activeItem.classList.add('active', 'bg-blue-100', 'text-blue-800');
+            }
+
+            function showDialog() {
+                dialogView.classList.remove('hidden');
+                libraryView.classList.add('hidden');
+                setActive(navDialog);
+            }
+
+            function showLibrary() {
+                libraryView.classList.remove('hidden');
+                dialogView.classList.add('hidden');
+                setActive(navLibrary);
+            }
+
+            navDialog.addEventListener('click', showDialog);
+            navLibrary.addEventListener('click', showLibrary);
+            setActive(navDialog); 
+
+            renderLibrary();
+
+            // ---------- download ----------
+            const modal = document.getElementById('downloadModal');
+            const textarea = document.getElementById('placeholderText');
+            const closeBtn = document.getElementById('closeModalBtn');
+            let currentResourceId = null;  // 当前正在编辑的资源id
+
+            // 根据id查找资源对象
+            function findResourceById(id) {
+                return resources.find(r => r.id == id);
+            }
+
+            // 关闭模态框时保存当前资源
+            function saveCurrentPlaceholder() {
+                if (currentResourceId !== null) {
+                    const res = findResourceById(currentResourceId);
+                    if (res) {
+                        res.placeholder = textarea.value;  // 保存修改后的值
+                    }
+                }
+            }
+
+            // 关闭模态框（同时保存）
+            function closeModal() {
+                saveCurrentPlaceholder();
+                modal.classList.add('hidden');
+                currentResourceId = null;
+            }
+
+            closeBtn.addEventListener('click', closeModal);
+            // 点击背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // 下载图标点击：弹出模态框
+            document.addEventListener('click', function(e) {
+                const downloadIcon = e.target.closest('.download-icon');
+                if (downloadIcon) {
+                    e.preventDefault();
+                    
+                    // 向上查找包含 data-resource-id 的容器
+                    const resourceContainer = downloadIcon.closest('[data-resource-id]');
+                    if (!resourceContainer) {
+                        alert('无法识别资源，请刷新重试');
+                        return;
+                    }
+
+                    const resourceId = resourceContainer.getAttribute('data-resource-id');
+                    const resource = findResourceById(resourceId);
+                    if (!resource) {
+                        alert('资源不存在');
+                        return;
+                    }
+
+                    // 如果之前有未保存的修改，先保存（实际上不会发生，因为关闭时会保存）
+                    // 设置当前编辑的资源id
+                    currentResourceId = resource.id;
+                    // 显示到文本框
+                    textarea.value = resource.placeholder;
+
+                    // 显示模态框
+                    modal.classList.remove('hidden');
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>
