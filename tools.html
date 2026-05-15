@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>我的个人集合</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-body: #f5f5f7;
+      --glass-bg: rgba(255, 255, 255, 0.72);
+      --glass-bg-heavy: rgba(255, 255, 255, 0.82);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-border-strong: rgba(0, 0, 0, 0.14);
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --accent: #007aff;
+      --shadow-sm: 0 2px 12px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 28px rgba(0,0,0,0.06);
+      --shadow-lg: 0 16px 44px rgba(0,0,0,0.08);
+      --shadow-xl: 0 24px 64px rgba(0,0,0,0.12);
+      --radius-capsule: 50px;
+      --radius-card: 22px;
+      --radius-modal: 28px;
+      --font-stack: 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { font-size:16px; -webkit-font-smoothing:antialiased; }
+    body {
+      font-family: var(--font-stack);
+      background: var(--bg-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bg-orb {
+      position: fixed; border-radius:50%; filter:blur(130px); pointer-events:none; z-index:0; opacity:0.35;
+    }
+    .bg-orb--blue {
+      width:350px; height:350px; background:radial-gradient(circle, rgba(0,122,255,0.13) 0%, transparent 70%);
+      top:-12%; left:-15%;
+    }
+    .bg-orb--purple {
+      width:300px; height:300px; background:radial-gradient(circle, rgba(175,82,222,0.09) 0%, transparent 70%);
+      bottom:10%; right:-18%;
+    }
+
+    .app-container {
+      position:relative; z-index:1; width:100%; max-width:480px; min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; padding:20px 20px 120px;
+    }
+
+    .title-blur-wrapper {
+      position: sticky; top:0; z-index:30; width:100%;
+      display:flex; flex-direction:column; align-items:center; margin-bottom:10px;
+    }
+    .page-title {
+      font-size:1.8rem; font-weight:620; letter-spacing:-0.03em;
+      color:var(--text-primary); position:relative; z-index:32;
+      text-align:center; padding:12px 0 18px; background:transparent;
+    }
+    .blur-gradient {
+      position:absolute; top:0; left:0; width:100%; height:110px;
+      pointer-events:none; z-index:31;
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0.3) 75%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,0.3) 75%, rgba(0,0,0,0) 100%);
+      background:transparent;
+    }
+
+    .search-overlay {
+      position:fixed; top:0; left:0; right:0; z-index:200;
+      display:flex; justify-content:center; padding:18px 20px;
+      background:rgba(245,245,247,0.75); backdrop-filter:blur(25px);
+      transform: translateY(-120%); opacity:0;
+      transition: transform 0.4s, opacity 0.3s;
+      border-bottom:1px solid rgba(0,0,0,0.06);
+    }
+    .search-overlay.active { transform: translateY(0); opacity:1; }
+    .search-field {
+      display:flex; align-items:center; gap:10px; width:100%; max-width:400px;
+      background:var(--glass-bg-heavy); backdrop-filter:blur(20px);
+      border:1px solid var(--glass-border-strong); border-radius:50px; padding:10px 18px;
+    }
+    .search-field input {
+      flex:1; border:none; background:transparent; font-family:var(--font-stack);
+      font-size:1rem; color:var(--text-primary); outline:none;
+    }
+    .search-field input::placeholder { color:#aaa; }
+    .search-field .close-btn {
+      width:32px; height:32px; border-radius:50%; border:none;
+      background:rgba(0,0,0,0.05); cursor:pointer; color:var(--text-secondary);
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+    }
+
+    .content-area { width:100%; flex:1; display:flex; flex-direction:column; gap:16px; padding-top:4px; }
+    .card-grid { display:flex; flex-direction:column; gap:14px; }
+    .card {
+      background:var(--glass-bg); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border:1px solid var(--glass-border); border-radius:var(--radius-card);
+      padding:18px 20px; box-shadow:var(--shadow-sm); display:flex; gap:14px; align-items:center;
+    }
+    .card:active { transform:scale(0.98); }
+    .card-icon {
+      width:48px; height:48px; border-radius:16px; background:rgba(0,0,0,0.03);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--accent); font-size:24px; flex-shrink:0;
+    }
+    .card-content { flex:1; min-width:0; }
+    .card-title { font-weight:600; font-size:1.1rem; margin-bottom:4px; }
+    .card-desc { font-size:0.85rem; color:var(--text-secondary); line-height:1.4; }
+    .card-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .tag { font-size:0.7rem; padding:3px 10px; border-radius:20px; background:rgba(0,0,0,0.05); color:var(--text-secondary); }
+    .card-action { margin-left:auto; }
+    .detail-btn {
+      background:rgba(0,0,0,0.04); border:none; border-radius:50px; padding:8px 16px;
+      font-family:var(--font-stack); font-size:0.8rem; font-weight:500; color:var(--text-primary);
+      display:flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap;
+    }
+    .detail-btn:hover { background:rgba(0,0,0,0.08); }
+
+    .bottom-floating {
+      position:fixed; bottom:28px; left:0; right:0;
+      display:flex; justify-content:center; align-items:center; gap:12px; z-index:100;
+      pointer-events:none;
+    }
+    .bottom-floating > * { pointer-events:auto; }
+    .tab-capsule {
+      display:flex; align-items:center; height:50px; padding:5px 8px;
+      background:var(--glass-bg-heavy); backdrop-filter:blur(30px);
+      border:1px solid var(--glass-border-strong); border-radius:var(--radius-capsule);
+      box-shadow:var(--shadow-lg);
+    }
+    .tab-option {
+      display:flex; align-items:center; gap:8px; padding:0 18px; height:38px;
+      border-radius:50px; border:none; background:transparent; font-family:var(--font-stack);
+      font-size:0.9rem; font-weight:500; color:var(--text-secondary); cursor:pointer;
+    }
+    .tab-option i { font-size:18px; }
+    .tab-option.active {
+      color:var(--text-primary); background:rgba(0,0,0,0.05);
+      box-shadow:0 2px 8px rgba(0,0,0,0.04);
+    }
+    .search-trigger {
+      width:50px; height:50px; border-radius:50%;
+      background:var(--glass-bg-heavy); backdrop-filter:blur(30px);
+      border:1px solid var(--glass-border-strong); box-shadow:var(--shadow-lg);
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+      color:var(--text-primary); font-size:22px;
+    }
+
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(8px);
+      z-index:300; display:flex; align-items:center; justify-content:center; padding:20px;
+      opacity:0; pointer-events:none; transition:opacity 0.3s;
+    }
+    .modal-overlay.active { opacity:1; pointer-events:auto; }
+    .modal {
+      background:var(--glass-bg-heavy); backdrop-filter:blur(30px);
+      border:1px solid var(--glass-border); border-radius:var(--radius-modal);
+      box-shadow:var(--shadow-xl); width:100%; max-width:400px; max-height:80vh;
+      overflow-y:auto; display:flex; flex-direction:column;
+      transform:translateY(30px); transition:transform 0.4s;
+    }
+    .modal-overlay.active .modal { transform:translateY(0); }
+    .modal-header {
+      padding:20px 20px 12px; display:flex; align-items:center; gap:12px;
+      border-bottom:1px solid rgba(0,0,0,0.05);
+    }
+    .modal-close {
+      margin-left:auto; width:34px; height:34px; border-radius:50%;
+      border:none; background:rgba(0,0,0,0.05); cursor:pointer;
+      font-size:18px; display:flex; align-items:center; justify-content:center;
+    }
+    .modal-body { padding:16px 20px; }
+    .modal-body p { font-size:0.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; }
+    .feature-list { list-style:none; display:flex; flex-direction:column; gap:8px; }
+    .feature-list li { font-size:0.85rem; color:var(--text-secondary); padding-left:18px; position:relative; }
+    .feature-list li::before { content:'•'; position:absolute; left:0; color:var(--accent); }
+    .modal-footer {
+      padding:12px 20px 18px; display:flex; gap:10px;
+      border-top:1px solid rgba(0,0,0,0.05);
+    }
+    .btn-primary {
+      flex:1; padding:12px; border-radius:50px; background:var(--accent);
+      color:white; border:none; font-weight:600; font-family:var(--font-stack);
+      font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .btn-outline {
+      padding:12px 18px; border-radius:50px; background:transparent;
+      border:1px solid rgba(0,0,0,0.15); color:var(--text-primary); cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-orb bg-orb--blue"></div>
+<div class="bg-orb bg-orb--purple"></div>
+
+<div class="app-container">
+  <div class="title-blur-wrapper">
+    <h1 class="page-title">我的个人集合</h1>
+    <div class="blur-gradient"></div>
+  </div>
+
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-field">
+      <i class="fa-solid fa-magnifying-glass" style="color:#8e8e93;"></i>
+      <input type="text" id="searchInput" placeholder="搜索游戏或工具…" autocomplete="off">
+      <button class="close-btn" id="closeSearchBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <main class="content-area" id="contentArea"></main>
+</div>
+
+<div class="bottom-floating">
+  <div class="tab-capsule" id="tabCapsule">
+    <button class="tab-option active" data-tab="games">
+      <i class="fa-solid fa-gamepad"></i> 游戏
+    </button>
+    <button class="tab-option" data-tab="tools">
+      <i class="fa-solid fa-wrench"></i> 工具
+    </button>
+  </div>
+  <button class="search-trigger" id="searchTriggerBtn">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="card-icon" id="modalIcon" style="width:44px;height:44px;font-size:22px;"></div>
+      <span class="modal-title" id="modalTitle" style="font-weight:620;font-size:1.2rem;"></span>
+      <button class="modal-close" id="modalClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // 前台数据（已包含新工具 Exchaor）
+    const gamesData = [
+      { id:'bricksoil', name:'打砖块', icon:'fa-solid fa-table-cells', shortDesc:'经典打砖块游戏，控制挡板反弹小球消除所有砖块。', detailDesc:'重温经典的打砖块游戏！移动底部挡板让小球反弹，撞击上方砖块阵列。包含多种道具。', features:['经典反弹物理','多种道具随机掉落','无限关卡布局升级','支持键盘与触屏'], tags:['打砖块','街机','经典'], link:'https://dkfile.istester.com/square/Bricksoil.shuci.html' },
+      { id:'disappearstars', name:'消失的星星', icon:'fa-solid fa-star', shortDesc:'点击消除星星，连锁反应得分，挑战最高分。', detailDesc:'一款轻松休闲的消除类游戏。点击相邻的同色星星即可消除，连锁消除会获得额外加分。', features:['点击同色星星群组消除','连锁消除额外奖励','步数限制策略选择','排行榜记录成绩'], tags:['消除','星星','休闲'], link:'https://dkfile.istester.com/square/Disappearstars.shuci.html' },
+      { id:'fiveinarow', name:'五子棋', icon:'fa-solid fa-circle', shortDesc:'双人对弈五子连珠，经典策略棋类。', detailDesc:'经典的五子棋对弈游戏，支持双人本地对战或人机对弈。率先在横、竖、斜任意方向形成连续五子的一方获胜。', features:['双人本地对战','多种AI难度','悔棋与和棋判定','简洁棋盘界面'], tags:['五子棋','策略','棋类'], link:'https://dkfile.istester.com/square/FiveinaRow.shuci.html' },
+      { id:'chinajiaqi', name:'中国象棋', icon:'fa-solid fa-flag', shortDesc:'中国象棋对弈，楚河汉界，运筹帷幄。', detailDesc:'原汁原味的中国象棋游戏，支持人机对弈与双人本地模式。包含将、士、象、马、车、炮、兵七种棋子。', features:['完整象棋规则','人机对弈多难度','双人本地对战','着法提示与悔棋'], tags:['象棋','策略','传统'], link:'https://dkfile.istester.com/square/ChinaJiaqi.shuci.html' },
+      { id:'piano', name:'钢琴', icon:'fa-solid fa-music', shortDesc:'模拟钢琴键盘，自由弹奏或跟弹练习。', detailDesc:'一个虚拟钢琴工具，支持多点触控弹奏。内置多种音色，可切换钢琴、八音盒等效果。', features:['多点触控弹奏','多种音色切换','演奏录制与回放','内置示范曲谱'], tags:['钢琴','音乐','弹奏'], link:'https://dkfile.istester.com/square/piano.shuci.html' },
+      { id:'basketballs', name:'篮球', icon:'fa-solid fa-basketball', shortDesc:'投篮挑战游戏，滑动投球入筐。', detailDesc:'一款投篮模拟小游戏，滑动屏幕控制投球角度和力度。连续命中可获得分数加成。', features:['滑动投球操控','连中分数加倍','多种篮筐距离','排行榜竞争'], tags:['篮球','投篮','体育'], link:'https://dkfile.istester.com/square/basketballs.shuci.html' }
+    ];
+
+    const toolsData = [
+      { id:'homework', name:'作业工具', icon:'fa-solid fa-clipboard-list', shortDesc:'管理学习任务，记录作业进度。', detailDesc:'一个简洁的作业管理小工具，可以创建不同科目的作业任务，设置截止日期和优先级。', features:['创建作业任务与截止日','勾选完成任务自动归档','按科目筛选进度','数据本地存储'], tags:['作业','学习','效率'], link:'https://dkfile.istester.com/square/homework.shuci.html' },
+      { id:'clock', name:'时钟工具', icon:'fa-solid fa-clock', shortDesc:'简洁实用的时钟，显示当前时间。', detailDesc:'一个漂亮的数字时钟工具，显示当前的日期和时间，支持12/24小时制切换。', features:['实时显示日期与时间','12/24小时制切换','简洁界面','响应式设计'], tags:['时钟','时间','桌面'], link:'https://dkfile.istester.com/square/clock.shuci.html' },
+      { id:'calculator', name:'计算器', icon:'fa-solid fa-calculator', shortDesc:'简洁好用的计算器，支持基础运算。', detailDesc:'一款轻量计算器工具，支持加减乘除基础运算，实时显示计算结果，内置历史记录。', features:['基础四则运算','实时结果显示','历史记录回溯','简洁大按钮设计'], tags:['计算器','工具','数学'], link:'https://dkfile.istester.com/square/calculator.shuci.html' },
+      { id:'exchaor', name:'公式计算器', icon:'fa-solid fa-arrows-rotate', shortDesc:'一个支持自定义公式的毛玻璃风格计算器。',detailDesc:'一个支持自定义公式的毛玻璃风格计算器，输入表达式自动识别变量，设置数值即可实时计算，并支持历史记录与导入导出。', features:[' 1.智能公式解析：支持自定义公式输入，自动识别变量并处理隐式乘法，如 1x+2y直接识别为 1*x+2*y。',' 2.变量动态赋值：检测未知项后，实时生成变量卡片，设置数值即时得到计算结果。',' 3.历史记录与导入导出：计算历史自动保存，可回溯加载；支持将公式及参数导出为 JSON 文件，方便分享或备份。'], tags:['工具','转换','在线'], link:'https://exchaor.netlify.app/' }
+    ];
+
+    let currentTab = 'games';
+    const contentArea = document.getElementById('contentArea');
+    const searchOverlay = document.getElementById('searchOverlay');
+    const searchInput = document.getElementById('searchInput');
+    const searchTriggerBtn = document.getElementById('searchTriggerBtn');
+    const closeSearchBtn = document.getElementById('closeSearchBtn');
+    const tabCapsule = document.getElementById('tabCapsule');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+    const modalClose = document.getElementById('modalClose');
+    const modalIcon = document.getElementById('modalIcon');
+
+    function renderCards(data, query = '') {
+      const q = query.trim().toLowerCase();
+      const filtered = data.filter(item => {
+        if (!q) return true;
+        return item.name.toLowerCase().includes(q) || item.tags.some(t => t.toLowerCase().includes(q));
+      });
+      if (filtered.length === 0) {
+        contentArea.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa;">没有找到匹配项</div>';
+        return;
+      }
+      contentArea.innerHTML = `<div class="card-grid">${filtered.map(item => `
+        <div class="card">
+          <div class="card-icon"><i class="${item.icon}"></i></div>
+          <div class="card-content">
+            <div class="card-title">${item.name}</div>
+            <div class="card-desc">${item.shortDesc}</div>
+            <div class="card-tags">${item.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+          </div>
+          <div class="card-action">
+            <button class="detail-btn" data-id="${item.id}" data-type="${currentTab}">
+              <i class="fa-solid fa-circle-info"></i> 详情
+            </button>
+          </div>
+        </div>
+      `).join('')}</div>`;
+
+      document.querySelectorAll('.detail-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const type = btn.dataset.type;
+          const list = type === 'games' ? gamesData : toolsData;
+          const item = list.find(i => i.id === id);
+          if (item) openModal(item, type);
+        });
+      });
+    }
+
+    function refreshContent() {
+      const data = currentTab === 'games' ? gamesData : toolsData;
+      renderCards(data, searchInput.value);
+    }
+
+    tabCapsule.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-option');
+      if (!btn) return;
+      const tab = btn.dataset.tab;
+      if (tab === currentTab) return;
+      currentTab = tab;
+      tabCapsule.querySelectorAll('.tab-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshContent();
+    });
+
+    searchTriggerBtn.addEventListener('click', () => {
+      searchOverlay.classList.add('active');
+      searchInput.focus();
+    });
+    closeSearchBtn.addEventListener('click', () => {
+      searchOverlay.classList.remove('active');
+      searchInput.value = '';
+      refreshContent();
+    });
+    searchInput.addEventListener('input', () => refreshContent());
+
+    function openModal(item, type) {
+      modalIcon.innerHTML = `<i class="${item.icon}"></i>`;
+      modalTitle.textContent = item.name;
+      modalBody.innerHTML = `<p>${item.detailDesc}</p><ul class="feature-list">${item.features.map(f => `<li>${f}</li>`).join('')}</ul>`;
+      const actionText = type === 'games' ? '开始游戏' : '打开工具';
+      modalFooter.innerHTML = `
+        <button class="btn-primary" id="modalActionBtn"><i class="fa-solid fa-rocket"></i> ${actionText}</button>
+        <button class="btn-outline" id="modalCancelBtn">关闭</button>
+      `;
+      document.getElementById('modalActionBtn').addEventListener('click', () => {
+        window.open(item.link, '_blank');
+        closeModal();
+      });
+      document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+      modalOverlay.classList.add('active');
+    }
+
+    function closeModal() { modalOverlay.classList.remove('active'); }
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal(); });
+
+    refreshContent();
+  })();
+</script>
+</body>
+</html>
